@@ -1,29 +1,73 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container">
-    <h2 class="mb-4">Restaurant Inspection Results</h2>
-
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Restaurant Ratings Summary</h3>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-building"></i> Restaurant Inspection Results</h2>
         </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <i class="bi bi-funnel"></i> Filter Results
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="collapse mb-4" id="filterCollapse">
+        <div class="card card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="nameFilter" class="form-control" placeholder="Filter by name...">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                        <input type="text" id="locationFilter" class="form-control" placeholder="Filter by location...">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <label for="ratingFilter" class="form-label">Filter by Rating:</label>
+                    <select id="ratingFilter" class="form-select">
+                        <option value="all">All Ratings</option>
+                        <option value="5">★★★★★ (5 stars)</option>
+                        <option value="4">★★★★☆ (4 stars+)</option>
+                        <option value="3">★★★☆☆ (3 stars+)</option>
+                        <option value="2">★★☆☆☆ (2 stars+)</option>
+                        <option value="1">★☆☆☆☆ (1 star+)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card shadow-sm">
         <div class="card-body">
             {% if restaurant_data %}
                 <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table table-hover" id="restaurantTable">
+                        <thead class="table-light">
                             <tr>
                                 <th>Restaurant</th>
                                 <th>Location</th>
                                 <th>Last Inspection</th>
-                                <th>Average Rating</th>
+                                <th>Rating</th>
                                 <th>Details</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for data in restaurant_data %}
-                                <tr>
+                                <tr class="restaurant-row"
+                                    data-name="{{ data.restaurant.name|lower }}"
+                                    data-location="{{ data.restaurant.location|lower }}"
+                                    data-rating="{{ data.avg_rating|default:0 }}">
                                     <td>{{ data.restaurant.name }}</td>
                                     <td>{{ data.restaurant.location }}</td>
                                     <td>{{ data.latest_date|date:"M d, Y" }}</td>
@@ -37,82 +81,74 @@
                                                         <i class="bi bi-star rating-stars"></i>
                                                     {% endif %}
                                                 {% endfor %}
-                                                ({{ data.avg_rating }})
+                                                <span class="ms-1">({{ stars|floatformat:1 }})</span>
                                             {% endwith %}
                                         {% else %}
-                                            Not rated
+                                            <span class="text-muted">Not rated</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                             data-bs-target="#detailsModal{{ data.restaurant.id }}">
-                                            View Details
+                                            <i class="bi bi-info-circle"></i> View
                                         </button>
                                     </td>
                                 </tr>
-
-                                <!-- Modal for inspection details -->
-                                <div class="modal fade" id="detailsModal{{ data.restaurant.id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">{{ data.restaurant.name }} Inspection History</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <table class="table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Date</th>
-                                                            <th>Hygiene</th>
-                                                            <th>Service</th>
-                                                            <th>Preparation</th>
-                                                            <th>Cooking</th>
-                                                            <th>Rating</th>
-                                                            <th>Inspector</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for request in data.inspections %}
-                                                            {% with inspection=request.inspection %}
-                                                                <tr>
-                                                                    <td>{{ inspection.inspection_date|date:"M d, Y" }}</td>
-                                                                    <td>{{ inspection.general_hygiene }}%</td>
-                                                                    <td>{{ inspection.customer_service }}%</td>
-                                                                    <td>{{ inspection.food_preparation }}%</td>
-                                                                    <td>{{ inspection.cooking_outcome }}%</td>
-                                                                    <td>
-                                                                        {% with stars=inspection.overall_rating %}
-                                                                            {% for i in "12345" %}
-                                                                                {% if forloop.counter <= stars %}
-                                                                                    <i class="bi bi-star-fill rating-stars"></i>
-                                                                                {% else %}
-                                                                                    <i class="bi bi-star rating-stars"></i>
-                                                                                {% endif %}
-                                                                            {% endfor %}
-                                                                            ({{ stars|floatformat:1 }})
-                                                                        {% endwith %}
-                                                                    </td>
-                                                                    <td>{{ inspection.inspector.username }}</td>
-                                                                </tr>
-                                                            {% endwith %}
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             {% else %}
                 <div class="alert alert-info">
-                    No inspection results available yet.
+                    <i class="bi bi-info-circle"></i> No inspection results available yet.
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- JavaScript for Filtering -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameFilter = document.getElementById('nameFilter');
+    const locationFilter = document.getElementById('locationFilter');
+    const ratingFilter = document.getElementById('ratingFilter');
+    const rows = document.querySelectorAll('.restaurant-row');
+
+    function applyFilters() {
+        const nameValue = nameFilter.value.toLowerCase();
+        const locationValue = locationFilter.value.toLowerCase();
+        const ratingValue = ratingFilter.value;
+
+        rows.forEach(row => {
+            const nameMatch = row.dataset.name.includes(nameValue);
+            const locationMatch = row.dataset.location.includes(locationValue);
+            const ratingMatch = ratingValue === 'all' ||
+                              parseFloat(row.dataset.rating) >= parseFloat(ratingValue);
+
+            row.style.display = (nameMatch && locationMatch && ratingMatch) ? '' : 'none';
+        });
+    }
+
+    nameFilter.addEventListener('input', applyFilters);
+    locationFilter.addEventListener('input', applyFilters);
+    ratingFilter.addEventListener('change', applyFilters);
+});
+</script>
+
+<style>
+    .rating-stars {
+        color: #ffc107;
+        font-size: 1rem;
+    }
+    .card {
+        border-radius: 10px;
+    }
+    .table th {
+        font-weight: 600;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+</style>
 {% endblock %}
