@@ -164,9 +164,6 @@ def public_dashboard(request):
                 'restaurant': restaurant,
                 'avg_rating': avg_rating,
                 'latest_date': restaurant.latest_inspection_date(),
-                'inspections': restaurant.inspection_requests.filter(
-                    inspection__is_completed=True
-                ).select_related('inspection')
             })
 
     return render(request, 'inspections/public_dashboard.html', {
