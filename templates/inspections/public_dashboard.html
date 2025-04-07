@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Restaurant Inspection Results</h2>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Latest Inspection Results</h3>
+        </div>
+        <div class="card-body">
+            {% if inspections %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Restaurant</th>
+                                <th>Hygiene</th>
+                                <th>Service</th>
+                                <th>Preparation</th>
+                                <th>Cooking</th>
+                                <th>Rating</th>
+                                <th>Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inspection in inspections %}
+                                <tr>
+                                    <td>{{ inspection.inspection_request.restaurant.name }}</td>
+                                    <td>{{ inspection.general_hygiene }}%</td>
+                                    <td>{{ inspection.customer_service }}%</td>
+                                    <td>{{ inspection.food_preparation }}%</td>
+                                    <td>{{ inspection.cooking_outcome }}%</td>
+                                    <td>
+                                        {% with stars=inspection.overall_rating %}
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= stars %}
+                                                    <i class="bi bi-star-fill rating-stars"></i>
+                                                {% else %}
+                                                    <i class="bi bi-star rating-stars"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                            ({{ stars|floatformat:1 }})
+                                        {% endwith %}
+                                    </td>
+                                    <td>{{ inspection.comments|truncatechars:50 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No inspection results available yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

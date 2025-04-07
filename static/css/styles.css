@@ -1,0 +1,8 @@
+/* Add any custom styles here */
+.rating-stars {
+    color: #ffc107;
+    font-size: 1.2rem;
+}
+
+.card {
+    transition: transform 0.2s;

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Admin Dashboard</h2>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Inspectors</h5>
+                    <p class="card-text display-6">{{ total_inspectors }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Restaurants</h5>
+                    <p class="card-text display-6">{{ total_restaurants }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Pending</h5>
+                    <p class="card-text display-6">{{ pending_requests }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Approved</h5>
+                    <p class="card-text display-6">{{ approved_requests }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-secondary">
+                <div class="card-body">
+                    <h5 class="card-title">Completed</h5>
+                    <p class="card-text display-6">{{ completed_inspections }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restaurant Ratings -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">Restaurant Ratings</h3>
+        </div>
+        <div class="card-body">
+            {% if restaurant_data %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Restaurant</th>
+                                <th>Owner</th>
+                                <th>Location</th>
+                                <th>Average Rating</th>
+                                <th>Inspections</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in restaurant_data %}
+                                <tr>
+                                    <td>{{ data.restaurant.name }}</td>
+                                    <td>{{ data.restaurant.owner.username }}</td>
+                                    <td>{{ data.restaurant.location }}</td>
+                                    <td>
+                                        {% if data.avg_rating %}
+                                            {% with stars=data.avg_rating %}
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= stars %}
+                                                        <i class="bi bi-star-fill rating-stars"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star rating-stars"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                ({{ stars|floatformat:1 }})
+                                            {% endwith %}
+                                        {% else %}
+                                            Not rated yet
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ data.inspection_count }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No restaurants found.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

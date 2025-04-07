@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    {% if user.is_authenticated %}
+        {% if user.is_restaurant_owner %}
+            <h2 class="mb-4">Your Restaurants</h2>
+            <div class="row">
+                {% for restaurant in restaurants %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ restaurant.name }}</h5>
+                                <p class="card-text">{{ restaurant.location }}</p>
+                                <a href="{% url 'request_inspection' restaurant.id %}" class="btn btn-primary">
+                                    Request Inspection
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            You haven't registered any restaurants yet. <a href="{% url 'add_restaurant' %}">Add a restaurant</a>.
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <h3 class="mt-5 mb-3">Your Inspection Requests</h3>
+            {% if inspection_requests %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Restaurant</th>
+                                <th>Requested Date</th>
+                                <th>Status</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in inspection_requests %}
+                                <tr>
+                                    <td>{{ req.restaurant.name }}</td>
+                                    <td>{{ req.requested_date }}</td>
+                                    <td>
+                                        {% if req.is_approved %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.inspection %}
+                                            {% with stars=req.inspection.overall_rating %}
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= stars %}
+                                                        <i class="bi bi-star-fill rating-stars"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star rating-stars"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                ({{ stars|floatformat:1 }})
+                                            {% endwith %}
+                                        {% else %}
+                                            Not inspected yet
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    You haven't made any inspection requests yet.
+                </div>
+            {% endif %}
+
+        {% elif user.is_inspector %}
+            <!-- Inspector's Dashboard -->
+            <div class="row mb-4">
+                <div class="col">
+                    <h2>Inspector Dashboard</h2>
+                </div>
+            </div>
+
+            <!-- Pending Requests Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">Pending Inspection Requests</h3>
+                </div>
+                <div class="card-body">
+                    {% if pending_requests %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Restaurant</th>
+                                        <th>Location</th>
+                                        <th>Requested Date</th>
+                                        <th>Owner</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in pending_requests %}
+                                        <tr>
+                                            <td>{{ request.restaurant.name }}</td>
+                                            <td>{{ request.restaurant.location }}</td>
+                                            <td>{{ request.requested_date }}</td>
+                                            <td>{{ request.restaurant.owner.username }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'approve_inspection' request.id %}" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-check-circle"></i> Approve
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            No pending inspection requests.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Upcoming Inspections Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Upcoming Inspections</h3>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_inspections %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Restaurant</th>
+                                        <th>Location</th>
+                                        <th>Scheduled Date</th>
+                                        <th>Owner</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inspection in upcoming_inspections %}
+                                        <tr>
+                                            <td>{{ inspection.restaurant.name }}</td>
+                                            <td>{{ inspection.restaurant.location }}</td>
+                                            <td>{{ inspection.requested_date }}</td>
+                                            <td>{{ inspection.restaurant.owner.username }}</td>
+                                            <td>
+                                                <a href="{% url 'conduct_inspection' inspection.id %}" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-clipboard-check"></i> Conduct Inspection
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            No upcoming inspections scheduled.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Completed Inspections Section -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Completed Inspections</h3>
+                </div>
+                <div class="card-body">
+                    {% if completed_inspections %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Restaurant</th>
+                                        <th>Inspection Date</th>
+                                        <th>Rating</th>
+                                        <th>Hygiene</th>
+                                        <th>Service</th>
+                                        <th>Preparation</th>
+                                        <th>Cooking</th>
+                                        <th>Comments</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inspection in completed_inspections %}
+                                        <tr>
+                                            <td>{{ inspection.inspection_request.restaurant.name }}</td>
+                                            <td>{{ inspection.inspection_date }}</td>
+                                            <td>
+                                                {% with stars=inspection.overall_rating %}
+                                                    {% for i in "12345" %}
+                                                        {% if forloop.counter <= stars %}
+                                                            <i class="bi bi-star-fill rating-stars"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-star rating-stars"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    ({{ stars|floatformat:1 }})
+                                                {% endwith %}
+                                            </td>
+                                            <td>{{ inspection.general_hygiene }}%</td>
+                                            <td>{{ inspection.customer_service }}%</td>
+                                            <td>{{ inspection.food_preparation }}%</td>
+                                            <td>{{ inspection.cooking_outcome }}%</td>
+                                            <td>{{ inspection.comments|truncatechars:30 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            You haven't completed any inspections yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    {% else %}
+        <!-- Public Landing Page -->
+        <div class="jumbotron text-center py-5 bg-light rounded-3">
+            <h1 class="display-4">Welcome to Restaurant Inspection System</h1>
+            <p class="lead">A comprehensive platform for managing restaurant inspections and ratings</p>
+            <hr class="my-4">
+            <p>Please login or register to access the system</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a class="btn btn-primary btn-lg px-4" href="{% url 'login' %}" role="button">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </a>
+                <a class="btn btn-secondary btn-lg px-4" href="{% url 'register' %}" role="button">
+                    <i class="bi bi-person-plus"></i> Register
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

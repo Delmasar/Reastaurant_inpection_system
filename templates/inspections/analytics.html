@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Your Inspection Analytics</h2>
+
+    {% if inspections %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Restaurant</th>
+                        <th>Inspection Date</th>
+                        <th>Hygiene</th>
+                        <th>Service</th>
+                        <th>Preparation</th>
+                        <th>Cooking</th>
+                        <th>Overall Rating</th>
+                        <th>Comments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inspection in inspections %}
+                        <tr>
+                            <td>{{ inspection.inspection_request.restaurant.name }}</td>
+                            <td>{{ inspection.inspection_date }}</td>
+                            <td>{{ inspection.general_hygiene }}%</td>
+                            <td>{{ inspection.customer_service }}%</td>
+                            <td>{{ inspection.food_preparation }}%</td>
+                            <td>{{ inspection.cooking_outcome }}%</td>
+                            <td>
+                                {% with stars=inspection.overall_rating %}
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= stars %}
+                                            <i class="bi bi-star-fill rating-stars"></i>
+                                        {% else %}
+                                            <i class="bi bi-star rating-stars"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    ({{ stars|floatformat:1 }})
+                                {% endwith %}
+                            </td>
+                            <td>{{ inspection.comments }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Average Ratings</h5>
+                    </div>
+                    <div class="card-body">
+                        {% with avg=inspections.0.inspection_request.restaurant.get_average_rating %}
+                            {% if avg %}
+                                <h3 class="text-center">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= avg %}
+                                            <i class="bi bi-star-fill rating-stars"></i>
+                                        {% else %}
+                                            <i class="bi bi-star rating-stars"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ avg|floatformat:1 }} / 5.0
+                                </h3>
+                            {% else %}
+                                <p class="text-center">No ratings yet</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            You don't have any completed inspections yet.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
