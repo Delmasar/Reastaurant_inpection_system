@@ -16,6 +16,10 @@ def register(request):
                 user.is_restaurant_owner = True
             elif form.cleaned_data.get('is_inspector'):
                 user.is_inspector = True
+            else:
+                # Default to customer if no other type selected
+                user.is_customer = True
+
             user.save()
 
             login(request, user)
@@ -27,7 +31,6 @@ def register(request):
     else:
         form = UserRegisterForm()
     return render(request, 'accounts/register.html', {'form': form})
-
 
 def add_restaurant(request):
     if not request.user.is_authenticated or not request.user.is_restaurant_owner:

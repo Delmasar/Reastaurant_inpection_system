@@ -4,12 +4,15 @@ from django.contrib import messages
 from .models import InspectionRequest, Inspection
 from .forms import InspectionRequestForm, InspectionForm
 from accounts.models import CustomUser, Restaurant
-from django.db.models import Avg, Case, When, FloatField
+from django.db.models import Max, Avg, Case, When, FloatField
 from django.db.models import Count, Q
 
 
 @login_required
 def home(request):
+    if request.user.is_customer:
+        return redirect('public_dashboard')
+
     context = {}
 
     if request.user.is_restaurant_owner:
@@ -45,45 +48,25 @@ def home(request):
     return render(request, 'inspections/home.html', context)
 
 
-
 @login_required
 def admin_dashboard(request):
     if not request.user.is_superuser:
         return redirect('home')
 
-    # Get all statistics
+    # Statistics
     total_inspectors = CustomUser.objects.filter(is_inspector=True).count()
     total_restaurants = Restaurant.objects.count()
     pending_requests = InspectionRequest.objects.filter(is_approved=False).count()
     approved_requests = InspectionRequest.objects.filter(is_approved=True, inspection__isnull=True).count()
     completed_inspections = Inspection.objects.filter(is_completed=True).count()
 
-    # Get restaurants with inspection count
-    restaurants = Restaurant.objects.annotate(
-        inspection_count=Count('inspection_requests__inspection')
-    ).order_by('-inspection_count')
-
-    # Calculate average ratings for each restaurant
-    restaurant_data = []
-    for restaurant in restaurants:
-        inspections = Inspection.objects.filter(
-            inspection_request__restaurant=restaurant,
-            is_completed=True
-        )
-
-        if inspections.exists():
-            avg_rating = sum(inspection.overall_rating for inspection in inspections) / inspections.count()
-        else:
-            avg_rating = None
-
-        restaurant_data.append({
-            'restaurant': restaurant,
-            'avg_rating': avg_rating,
-            'inspection_count': restaurant.inspection_count
-        })
-
-    # Sort by average rating (highest first)
-    restaurant_data.sort(key=lambda x: x['avg_rating'] or 0, reverse=True)
+    # Get detailed inspection data
+    inspections = Inspection.objects.filter(
+        is_completed=True
+    ).select_related(
+        'inspection_request__restaurant',
+        'inspector'
+    ).order_by('-inspection_date')
 
     context = {
         'total_inspectors': total_inspectors,
@@ -91,10 +74,9 @@ def admin_dashboard(request):
         'pending_requests': pending_requests,
         'approved_requests': approved_requests,
         'completed_inspections': completed_inspections,
-        'restaurant_data': restaurant_data,
+        'inspections': inspections,
     }
     return render(request, 'inspections/admin_dashboard.html', context)
-
 
 @login_required
 def request_inspection(request, restaurant_id):
@@ -167,11 +149,26 @@ def inspection_analytics(request):
 
 
 def public_dashboard(request):
-    # Only show completed inspections to the public
-    inspections = Inspection.objects.filter(is_completed=True).select_related(
-        'inspection_request__restaurant'
-    ).order_by('-inspection_date')
+    # Get all restaurants with completed inspections
+    restaurants = Restaurant.objects.filter(
+        inspection_requests__inspection__is_completed=True
+    ).annotate(
+        latest_date=Max('inspection_requests__inspection__inspection_date')
+    ).distinct().order_by('-latest_date')
+
+    restaurant_data = []
+    for restaurant in restaurants:
+        avg_rating = restaurant.average_rating()
+        if avg_rating is not None:  # Only include restaurants with ratings
+            restaurant_data.append({
+                'restaurant': restaurant,
+                'avg_rating': avg_rating,
+                'latest_date': restaurant.latest_inspection_date(),
+                'inspections': restaurant.inspection_requests.filter(
+                    inspection__is_completed=True
+                ).select_related('inspection')
+            })
 
     return render(request, 'inspections/public_dashboard.html', {
-        'inspections': inspections
+        'restaurant_data': restaurant_data
     })

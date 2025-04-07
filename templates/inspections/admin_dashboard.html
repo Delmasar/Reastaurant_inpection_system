@@ -48,6 +48,64 @@
         </div>
     </div>
 
+    <!-- Detailed Inspection Records -->
+<div class="card mt-4">
+    <div class="card-header bg-dark text-white">
+        <h3 class="mb-0">Detailed Inspection Records</h3>
+    </div>
+    <div class="card-body">
+        {% if inspections %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Restaurant</th>
+                            <th>Owner</th>
+                            <th>Inspector</th>
+                            <th>Date</th>
+                            <th>Hygiene</th>
+                            <th>Service</th>
+                            <th>Preparation</th>
+                            <th>Cooking</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inspection in inspections %}
+                            <tr>
+                                <td>{{ inspection.inspection_request.restaurant.name }}</td>
+                                <td>{{ inspection.inspection_request.restaurant.owner.username }}</td>
+                                <td>{{ inspection.inspector.username }}</td>
+                                <td>{{ inspection.inspection_date|date:"M d, Y" }}</td>
+                                <td>{{ inspection.general_hygiene }}%</td>
+                                <td>{{ inspection.customer_service }}%</td>
+                                <td>{{ inspection.food_preparation }}%</td>
+                                <td>{{ inspection.cooking_outcome }}%</td>
+                                <td>
+                                    {% with stars=inspection.overall_rating %}
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= stars %}
+                                                <i class="bi bi-star-fill rating-stars"></i>
+                                            {% else %}
+                                                <i class="bi bi-star rating-stars"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                        ({{ stars|floatformat:1 }})
+                                    {% endwith %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No completed inspections yet.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
     <!-- Restaurant Ratings -->
     <div class="card">
         <div class="card-header bg-dark text-white">
